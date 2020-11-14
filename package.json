@@ -1,0 +1,27 @@
+{
+  "name": "simple-express-starter",
+  "version": "1.0.0",
+  "description": "A easier way to start an express app",
+  "main": "Server/Server.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdbedi/Simple-Express-Starter.git"
+  },
+  "keywords": [
+    "Express",
+    "Starter",
+    "Node"
+  ],
+  "author": "Sheel Bedi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sdbedi/Simple-Express-Starter/issues"
+  },
+  "homepage": "https://github.com/sdbedi/Simple-Express-Starter#readme",
+  "dependencies": {
+    "express": "^4.16.2"
+  }
+}
