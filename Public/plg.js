@@ -18,6 +18,7 @@
 // @grant       unsafeWindow
 // ==/UserScript==
 // jQuery is already added by Steam, force no conflict mode.
+
 (function ($, async) {
   $.noConflict(true);
   const PAGE_MARKET = 0;
