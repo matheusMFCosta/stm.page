@@ -18,31 +18,27 @@
 // @grant       unsafeWindow
 // ==/UserScript==
 // jQuery is already added by Steam, force no conflict mode.
+const country = "BR";
+const language = "brazilian";
+const currencyId = 7;
 
-// function escapeURI(name) {
-//   var previousName = "";
-//   while (previousName != name) {
-//     previousName = name;
-//     name = name.replace("?", "%3F").replace("#", "%23").replace("	", "%09");
-//   }
-//   return name;
-// }
+const getCurrentItemOrdersHistogram = (itemId) => {
+  return new Promise((resolve, reject) => {
+    var url =
+      window.location.protocol +
+      "//steamcommunity.com/market/itemordershistogram?language=english&currency=" +
+      currencyId +
+      "&item_nameid=" +
+      itemId +
+      "&two_factor=0";
 
-// function getMarketHashName(item) {
-//   if (item == null) return null;
-
-//   if (item.description != null && item.description.market_hash_name != null)
-//     return escapeURI(item.description.market_hash_name);
-
-//   if (item.description != null && item.description.name != null)
-//     return escapeURI(item.description.name);
-
-//   if (item.market_hash_name != null) return escapeURI(item.market_hash_name);
-
-//   if (item.name != null) return escapeURI(item.name);
-
-//   return null;
-// }
+    $.get(url, function (histogram) {
+      resolve(histogram);
+    }).fail(function () {
+      reject({});
+    });
+  });
+};
 
 const getCurrentMarketItemNameId = async (appid, market_name) => {
   return new Promise((resolve, reject) => {
@@ -57,6 +53,8 @@ const getCurrentMarketItemNameId = async (appid, market_name) => {
       var matches = /Market_LoadOrderSpread\( (.+) \);/.exec(page);
       var item_nameid = matches[1];
       resolve(item_nameid);
+    }).fail(function (page) {
+      reject(0);
     });
   });
 };
@@ -79,10 +77,11 @@ const updateas = async () => {
   const productName = splitedUrl[splitedUrl.length - 1];
   const appId = splitedUrl[splitedUrl.length - 2];
 
-  console.log(`appId`, $("a[href^='steamcommunity.com']"));
   const productId = await getCurrentMarketItemNameId(appId, productName);
+  const histogram: any = await getCurrentItemOrdersHistogram(productId);
+  const lowest_sell_order = histogram.lowest_sell_order;
 
-  alert(productId);
+  alert(lowest_sell_order);
 };
 
 const initializeControl = () => {

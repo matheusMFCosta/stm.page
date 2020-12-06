@@ -1,3 +1,12 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 // ==UserScript==
 // @name        Steam Quick sell
 // @icon        https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg
@@ -18,33 +27,24 @@
 // @grant       unsafeWindow
 // ==/UserScript==
 // jQuery is already added by Steam, force no conflict mode.
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
+const country = "BR";
+const language = "brazilian";
+const currencyId = 7;
+const getCurrentItemOrdersHistogram = (itemId) => {
+    return new Promise((resolve, reject) => {
+        var url = window.location.protocol +
+            "//steamcommunity.com/market/itemordershistogram?language=english&currency=" +
+            currencyId +
+            "&item_nameid=" +
+            itemId +
+            "&two_factor=0";
+        $.get(url, function (histogram) {
+            resolve(histogram);
+        }).fail(function () {
+            reject({});
+        });
     });
 };
-// function escapeURI(name) {
-//   var previousName = "";
-//   while (previousName != name) {
-//     previousName = name;
-//     name = name.replace("?", "%3F").replace("#", "%23").replace("	", "%09");
-//   }
-//   return name;
-// }
-// function getMarketHashName(item) {
-//   if (item == null) return null;
-//   if (item.description != null && item.description.market_hash_name != null)
-//     return escapeURI(item.description.market_hash_name);
-//   if (item.description != null && item.description.name != null)
-//     return escapeURI(item.description.name);
-//   if (item.market_hash_name != null) return escapeURI(item.market_hash_name);
-//   if (item.name != null) return escapeURI(item.name);
-//   return null;
-// }
 const getCurrentMarketItemNameId = (appid, market_name) => __awaiter(this, void 0, void 0, function* () {
     return new Promise((resolve, reject) => {
         var url = window.location.protocol +
@@ -56,6 +56,8 @@ const getCurrentMarketItemNameId = (appid, market_name) => __awaiter(this, void 
             var matches = /Market_LoadOrderSpread\( (.+) \);/.exec(page);
             var item_nameid = matches[1];
             resolve(item_nameid);
+        }).fail(function (page) {
+            reject(0);
         });
     });
 });
@@ -70,9 +72,10 @@ const updateas = () => __awaiter(this, void 0, void 0, function* () {
     const splitedUrl = href.split("/");
     const productName = splitedUrl[splitedUrl.length - 1];
     const appId = splitedUrl[splitedUrl.length - 2];
-    console.log(`appId`, $("a[href^='steamcommunity.com']"));
     const productId = yield getCurrentMarketItemNameId(appId, productName);
-    alert(productId);
+    const histogram = yield getCurrentItemOrdersHistogram(productId);
+    const lowest_sell_order = histogram.lowest_sell_order;
+    alert(lowest_sell_order);
 });
 const initializeControl = () => {
     const selector = "#global_header";
