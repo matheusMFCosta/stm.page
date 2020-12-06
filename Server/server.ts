@@ -20,7 +20,7 @@ app.get("/:page", function (req, res) {
     return res.sendFile(
       path.join(__dirname, "../dist/Public", `${validPages[askedPage]}.js`)
     );
-
+  
   return res.send({ status: "fail", message: "invalid file name" });
 });
 
