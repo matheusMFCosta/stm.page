@@ -724,12 +724,13 @@
         } else {
           setTimeout(
             function () {
-              marketListingsQueueWorker(listing, true, function (
-                success,
-                cached
-              ) {
-                next(); // Go to the next queue item, regardless of success.
-              });
+              marketListingsQueueWorker(
+                listing,
+                true,
+                function (success, cached) {
+                  next(); // Go to the next queue item, regardless of success.
+                }
+              );
             },
             cached ? 0 : getRandomInt(30000, 45000)
           );
@@ -803,131 +804,131 @@
 
       var failed = 0;
 
-      market.getPriceHistory(item, true, function (
-        errorPriceHistory,
-        history,
-        cachedHistory
-      ) {
-        if (errorPriceHistory) {
-          logConsole("Failed to get price history for " + game_name);
+      market.getPriceHistory(
+        item,
+        true,
+        function (errorPriceHistory, history, cachedHistory) {
+          if (errorPriceHistory) {
+            logConsole("Failed to get price history for " + game_name);
 
-          if (errorPriceHistory == ERROR_FAILED) failed += 1;
-        }
-
-        market.getItemOrdersHistogram(item, true, function (
-          errorHistogram,
-          histogram,
-          cachedListings
-        ) {
-          if (errorHistogram) {
-            logConsole("Failed to get orders histogram for " + game_name);
-
-            if (errorHistogram == ERROR_FAILED) failed += 1;
+            if (errorPriceHistory == ERROR_FAILED) failed += 1;
           }
 
-          if (failed > 0 && !ignoreErrors) {
-            return callback(false, cachedHistory && cachedListings);
-          }
-
-          // Shows the highest buy order price on the market listings.
-          // The 'histogram.highest_buy_order' is not reliable as Steam is caching this value, but it gives some idea for older titles/listings.
-          var highestBuyOrderPrice =
-            histogram == null || histogram.highest_buy_order == null
-              ? "-"
-              : histogram.highest_buy_order / 100 + currencySymbol;
-          $(
-            ".market_table_value > span:nth-child(1) > span:nth-child(1) > span:nth-child(1)",
-            listingUI
-          ).append(
-            ' ➤ <span  title="This is likely the highest buy order price.">' +
-              histogram.graph_max_x +
-              "</span>"
-          );
-
-          logConsole("============================");
-          logConsole(JSON.stringify(listing));
-          logConsole(game_name + ": " + asset.name);
-          logConsole("Current price: " + price / 100.0);
-
-          // Calculate two prices here, one without the offset and one with the offset.
-          // The price without the offset is required to not relist the item constantly when you have the lowest price (i.e., with a negative offset).
-          // The price with the offset should be used for relisting so it will still apply the user-set offset.
-
-          var sellPriceWithoutOffset = calculateSellPriceBeforeFees(
-            history,
-            histogram,
-            false,
-            priceInfo.minPriceBeforeFees,
-            priceInfo.maxPriceBeforeFees
-          );
-          var sellPriceWithOffset = calculateSellPriceBeforeFees(
-            history,
-            histogram,
+          market.getItemOrdersHistogram(
+            item,
             true,
-            priceInfo.minPriceBeforeFees,
-            priceInfo.maxPriceBeforeFees
-          );
+            function (errorHistogram, histogram, cachedListings) {
+              if (errorHistogram) {
+                logConsole("Failed to get orders histogram for " + game_name);
 
-          var sellPriceWithoutOffsetWithFees = histogram.lowest_sell_order;
+                if (errorHistogram == ERROR_FAILED) failed += 1;
+              }
 
-          logConsole(
-            "Calculated price: " +
-              sellPriceWithoutOffsetWithFees / 100.0 +
-              " (" +
-              sellPriceWithoutOffset / 100.0 +
-              ")"
-          );
+              if (failed > 0 && !ignoreErrors) {
+                return callback(false, cachedHistory && cachedListings);
+              }
 
-          listingUI.addClass("price_" + sellPriceWithOffset);
+              // Shows the highest buy order price on the market listings.
+              // The 'histogram.highest_buy_order' is not reliable as Steam is caching this value, but it gives some idea for older titles/listings.
+              var highestBuyOrderPrice =
+                histogram == null || histogram.highest_buy_order == null
+                  ? "-"
+                  : histogram.highest_buy_order / 100 + currencySymbol;
+              $(
+                ".market_table_value > span:nth-child(1) > span:nth-child(1) > span:nth-child(1)",
+                listingUI
+              ).append(
+                ' ➤ <span  title="This is likely the highest buy order price.">' +
+                  histogram.graph_max_x +
+                  "</span>"
+              );
 
-          $(".market_listing_my_price", listingUI)
-            .last()
-            .prop(
-              "title",
-              "The best price is " +
-                sellPriceWithoutOffsetWithFees / 100.0 +
-                currencySymbol +
-                "."
-            );
+              logConsole("============================");
+              logConsole(JSON.stringify(listing));
+              logConsole(game_name + ": " + asset.name);
+              logConsole("Current price: " + price / 100.0);
 
-          if (sellPriceWithoutOffsetWithFees < price) {
-            logConsole("Sell price is too high.");
+              // Calculate two prices here, one without the offset and one with the offset.
+              // The price without the offset is required to not relist the item constantly when you have the lowest price (i.e., with a negative offset).
+              // The price with the offset should be used for relisting so it will still apply the user-set offset.
 
-            $(".market_listing_my_price", listingUI)
-              .last()
-              .css("background", COLOR_PRICE_EXPENSIVE);
-            listingUI.addClass("overpriced");
+              var sellPriceWithoutOffset = calculateSellPriceBeforeFees(
+                history,
+                histogram,
+                false,
+                priceInfo.minPriceBeforeFees,
+                priceInfo.maxPriceBeforeFees
+              );
+              var sellPriceWithOffset = calculateSellPriceBeforeFees(
+                history,
+                histogram,
+                true,
+                priceInfo.minPriceBeforeFees,
+                priceInfo.maxPriceBeforeFees
+              );
 
-            if (getSettingWithDefault(SETTING_RELIST_AUTOMATICALLY) == 1) {
-              queueOverpricedItemListing(listing.listingid);
+              var sellPriceWithoutOffsetWithFees = histogram.lowest_sell_order;
+
+              logConsole(
+                "Calculated price: " +
+                  sellPriceWithoutOffsetWithFees / 100.0 +
+                  " (" +
+                  sellPriceWithoutOffset / 100.0 +
+                  ")"
+              );
+
+              listingUI.addClass("price_" + sellPriceWithOffset);
+
+              $(".market_listing_my_price", listingUI)
+                .last()
+                .prop(
+                  "title",
+                  "The best price is " +
+                    sellPriceWithoutOffsetWithFees / 100.0 +
+                    currencySymbol +
+                    "."
+                );
+
+              if (sellPriceWithoutOffsetWithFees < price) {
+                logConsole("Sell price is too high.");
+
+                $(".market_listing_my_price", listingUI)
+                  .last()
+                  .css("background", COLOR_PRICE_EXPENSIVE);
+                listingUI.addClass("overpriced");
+
+                if (getSettingWithDefault(SETTING_RELIST_AUTOMATICALLY) == 1) {
+                  queueOverpricedItemListing(listing.listingid);
+                }
+              } else if (sellPriceWithoutOffsetWithFees > price) {
+                logConsole("Sell price is too low.");
+
+                $(".market_listing_my_price", listingUI)
+                  .last()
+                  .css("background", COLOR_PRICE_CHEAP);
+                listingUI.addClass("underpriced");
+              } else {
+                logConsole("Sell price is fair.");
+
+                $(".market_listing_my_price", listingUI)
+                  .last()
+                  .css("background", COLOR_PRICE_FAIR);
+                listingUI.addClass("fair");
+              }
+
+              $(".market_listing_my_price", listingUI)
+                .last()
+                .append(
+                  '<span id="my_market_sellistings_total_price">, ' +
+                    highestBuyOrderPrice +
+                    "</span>"
+                );
+
+              return callback(true, cachedHistory && cachedListings);
             }
-          } else if (sellPriceWithoutOffsetWithFees > price) {
-            logConsole("Sell price is too low.");
-
-            $(".market_listing_my_price", listingUI)
-              .last()
-              .css("background", COLOR_PRICE_CHEAP);
-            listingUI.addClass("underpriced");
-          } else {
-            logConsole("Sell price is fair.");
-
-            $(".market_listing_my_price", listingUI)
-              .last()
-              .css("background", COLOR_PRICE_FAIR);
-            listingUI.addClass("fair");
-          }
-
-          $(".market_listing_my_price", listingUI)
-            .last()
-            .append(
-              '<span id="my_market_sellistings_total_price">, ' +
-                highestBuyOrderPrice +
-                "</span>"
-            );
-
-          return callback(true, cachedHistory && cachedListings);
-        });
-      });
+          );
+        }
+      );
     }
 
     // Queue an overpriced item listing to be relisted.
@@ -1205,7 +1206,7 @@
       ".pagination li { display:inline-block; padding: 5px 10px;background: rgba(255, 255, 255, 0.10); margin-right: 6px; border: 1px solid #666666; }" +
       ".pagination li.active { background: rgba(255, 255, 255, 0.25); }"
   );
-
+  //
   $(document).ready(function () {
     // Make sure the user is logged in, there's not much we can do otherwise.
     if (!isLoggedIn) {
