@@ -53,8 +53,8 @@ const getCurrentMarketItemNameId = async (appid, market_name) => {
       var matches = /Market_LoadOrderSpread\( (.+) \);/.exec(page);
       var item_nameid = matches[1];
       resolve(item_nameid);
-    }).fail(function (page) {
-      reject(0);
+    }).fail(function (error) {
+      alert(error);
     });
   });
 };
