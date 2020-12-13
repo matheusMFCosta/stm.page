@@ -24,19 +24,6 @@ enum pages {
   Inventory = "inventory",
 }
 
-let currentPage: pages = pages.Market;
-
-const getMarketElementById = (element: string) => {
-  if (currentPage === pages.Inventory)
-    //@ts-ignore
-    return window.parent.$(element);
-  return $(element);
-};
-
-const getInventoryElementById = (element: string) => {
-  return $(element);
-};
-
 const localStorageMap = {
   isFixed: "stm.plg.isFixed",
   value: "stm.plg.value",
@@ -50,6 +37,7 @@ const idsMap = {
   modifyButton: "stm.plg.modify.button",
   modifyTypeFixed: "stm.plg.modify.type.fixed",
   modifyTypePercent: "stm.plg.modify.type.percent",
+  sellItem: "stm.plg.modify.sell.item",
 };
 
 interface ProductDetail {
@@ -67,6 +55,36 @@ let productDetail = {
   id: "",
   name: "",
   value: "",
+};
+
+enum ModifierType {
+  Fixed = "fixed",
+  Percent = "percet",
+}
+
+let currentPage: pages = pages.Market;
+let modifierType: ModifierType = ModifierType.Fixed;
+let modifierValue: string = "222";
+
+const sleep = async (time: number) =>
+  await new Promise((resolve) => {
+    setTimeout(() => resolve({}), time);
+  });
+
+const getMarketElementById = (element: string, type: "id" | "class" = "id") => {
+  const prefix = type === "class" ? "." : "";
+  if (currentPage === pages.Inventory)
+    //@ts-ignore
+    return window.parent.$(prefix + element);
+  return $(prefix + element);
+};
+
+const getInventoryElementById = (
+  element: string,
+  type: "id" | "class" = "id"
+) => {
+  const prefix = type === "class" ? "." : "";
+  return $(prefix + element);
 };
 
 const getCurrentItemOrdersHistogram = (itemId) => {
@@ -108,11 +126,43 @@ const getCurrentMarketItemNameId = async (
     });
   });
 };
+const calculateValue = (
+  value: string,
+  modifierType: ModifierType,
+  productValue: string
+) => {
+  const isFixed = modifierType === ModifierType.Fixed;
+  const calculatedValue = parseFloat(value.replace(",", "."));
+  const variableValue = parseFloat(productValue);
 
-const isUserLogged = () =>
-  (typeof unsafeWindow.g_rgWalletInfo !== "undefined" &&
-    unsafeWindow.g_rgWalletInfo != null) ||
-  (typeof unsafeWindow.g_bLoggedIn !== "undefined" && unsafeWindow.g_bLoggedIn);
+  console.log(calculatedValue, productValue);
+  if (isFixed) {
+    return variableValue + calculatedValue;
+  }
+
+  return variableValue * (1 + calculatedValue / 100);
+};
+
+const sellItem = async () => {
+  const button = getInventoryElementById("item_market_actions", "class").find(
+    "a"
+  )[1];
+  button.click((e) => e.preventDefault());
+
+  console.log(modifierValue, modifierType);
+  const value = calculateValue(
+    modifierValue,
+    modifierType,
+    productDetail.value
+  );
+
+  await sleep(2000);
+
+  (document.getElementById("market_sell_currency_input") as any).value = value;
+  (document.getElementById(
+    "market_sell_dialog_accept_ssa"
+  ) as any).checked = true;
+};
 
 const getProductDetails = async (): Promise<ProductDetail> => {
   const href = document
@@ -139,7 +189,6 @@ const getProductDetails = async (): Promise<ProductDetail> => {
 };
 
 const updateProductDetails = (productDetail: ProductDetail) => {
-  console.log(productDetail);
   getMarketElementById(idsMap.productId).textContent = productDetail.id;
   getMarketElementById(idsMap.productName).textContent = productDetail.name;
   getMarketElementById(idsMap.productValue).textContent = productDetail.value;
@@ -148,13 +197,10 @@ const updateProductDetails = (productDetail: ProductDetail) => {
 const initializeControlPanel = async (): Promise<void> => {
   const selector = "#global_header";
 
-  const defaultValue = localStorage.getItem(localStorageMap.value) || "";
-  const isFixedLocalStorage = localStorage.getItem(localStorageMap.isFixed);
-  const isFixed =
-    isFixedLocalStorage === "true" || isFixedLocalStorage === null;
+  const isFixed = modifierType === ModifierType.Fixed;
 
   $(selector).append(
-    `<div style="background: #8F98A0; position: absolute; z-index: 9999; top: 10px; right: 10px; width: 200px; height: 300px; color: #000;">
+    `<div id="container22" style="background: #8F98A0; position: absolute; z-index: 9999; top: 10px; right: 10px; width: 200px; height: 300px; color: #000;">
       <div style="display: flex; flex-direction: column;">
         <span >Product Details </span>
         <span >Id: <span id="${idsMap.productId}">N/A</span><span>
@@ -174,12 +220,16 @@ const initializeControlPanel = async (): Promise<void> => {
     }> percent
         </div>
         <label for="${idsMap.modifyInput}"/> Modifier </label>
-        <input id="${idsMap.modifyInput}" value="${defaultValue}" />
+        <input id="${idsMap.modifyInput}" value="${modifierValue}" />
         <input id="${idsMap.modifyButton}" type="button" value="Submit"/>
-   
+        <input id="${idsMap.sellItem}" type="button" value="Click"/>
       </div>
     </div>`
   );
+
+  $("#container22").click(function (event) {
+    event.stopPropagation();
+  });
 
   document.getElementById(idsMap.modifyButton).addEventListener("click", () => {
     const isFixed = (document.getElementById(idsMap.modifyTypeFixed) as any)
@@ -193,15 +243,38 @@ const initializeControlPanel = async (): Promise<void> => {
 const initializeStriptEvents = () => {
   const ProductButton = $(document.getElementById("inventories"));
   $(ProductButton).on("click", async () => {
-    const productDetails = await getProductDetails();
-    updateProductDetails(productDetails);
+    productDetail = await getProductDetails();
+    updateProductDetails(productDetail);
+  });
+
+  const sellItemButton = getMarketElementById(idsMap.sellItem);
+  $(sellItemButton).on("click", async (e) => {
+    alert("AAA");
+    sellItem();
   });
 };
 
-const initializeScript = () => {
+const initializeVariables = () => {
+  modifierValue = localStorage.getItem(localStorageMap.value) || "";
+  const isFixedLocalStorage = localStorage.getItem(localStorageMap.isFixed);
+  modifierType =
+    isFixedLocalStorage === "true" || isFixedLocalStorage === null
+      ? ModifierType.Fixed
+      : ModifierType.Percent;
+};
+
+const initializeMarketEvents = () => {
   initializeControlPanel();
+};
+
+const initializeInventoryEvents = () => {
   initializeStriptEvents();
 };
+
+const isUserLogged = () =>
+  (typeof unsafeWindow.g_rgWalletInfo !== "undefined" &&
+    unsafeWindow.g_rgWalletInfo != null) ||
+  (typeof unsafeWindow.g_bLoggedIn !== "undefined" && unsafeWindow.g_bLoggedIn);
 
 (function ($, async) {
   $(document).ready(function () {
@@ -209,7 +282,11 @@ const initializeScript = () => {
     currentPage = document.location.pathname.includes("market")
       ? pages.Market
       : pages.Inventory;
-    if (window.location.host === "steamcommunity.com") initializeScript();
+
+    initializeVariables();
+    if (currentPage === pages.Market) initializeMarketEvents();
+    if (currentPage === pages.Inventory) initializeInventoryEvents();
+    // if (window.location.host === "steamcommunity.com") initializeScript();
   });
   //@ts-ignore
 })(jQuery, async);
