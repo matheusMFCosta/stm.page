@@ -29,24 +29,31 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 var pages;
 (function (pages) {
-    pages["Market"] = "marker";
+    pages["Market"] = "market";
     pages["Inventory"] = "inventory";
 })(pages || (pages = {}));
 let currentPage = pages.Market;
 const getMarketElementById = (element) => {
     if (currentPage === pages.Inventory)
         //@ts-ignore
-        return window.parent.$("#" + element);
-    return $("#" + element);
+        return window.parent.$(element);
+    return $(element);
 };
 const getInventoryElementById = (element) => {
-    //@ts-ignore
-    return $("#" + element);
+    return $(element);
+};
+const localStorageMap = {
+    isFixed: "stm.plg.isFixed",
+    value: "stm.plg.value",
 };
 const idsMap = {
     productName: "stm.plg.product.name",
     productValue: "stm.plg.product.value",
     productId: "stm.plg.product.id",
+    modifyInput: "stm.plg.modify.input",
+    modifyButton: "stm.plg.modify.button",
+    modifyTypeFixed: "stm.plg.modify.type.fixed",
+    modifyTypePercent: "stm.plg.modify.type.percent",
 };
 const country = "BR";
 const language = "brazilian";
@@ -108,21 +115,41 @@ const getProductDetails = () => __awaiter(this, void 0, void 0, function* () {
     };
 });
 const updateProductDetails = (productDetail) => {
+    console.log(productDetail);
     getMarketElementById(idsMap.productId).textContent = productDetail.id;
     getMarketElementById(idsMap.productName).textContent = productDetail.name;
     getMarketElementById(idsMap.productValue).textContent = productDetail.value;
 };
-const initializeControlPanel = () => {
+const initializeControlPanel = () => __awaiter(this, void 0, void 0, function* () {
     const selector = "#global_header";
+    const defaultValue = localStorage.getItem(localStorageMap.value) || "";
+    const isFixedLocalStorage = localStorage.getItem(localStorageMap.isFixed);
+    const isFixed = isFixedLocalStorage === "true" || isFixedLocalStorage === null;
     $(selector).append(`<div style="background: #8F98A0; position: absolute; z-index: 9999; top: 10px; right: 10px; width: 200px; height: 300px; color: #000;">
       <div style="display: flex; flex-direction: column;">
         <span >Product Details </span>
-        <span >Value: <span id="${idsMap.productId}">N/A</span><span>
+        <span >Id: <span id="${idsMap.productId}">N/A</span><span>
         <span >Name: <span id="${idsMap.productName}">N/A</span><span>
         <span >Value: <span id="${idsMap.productValue}">N/A</span><span>
+
+        <div id="types">
+          <input type="radio" id="${idsMap.modifyTypeFixed}" name="type" value="fixed" ${isFixed ? "checked='true'" : ""}"> fixed
+          <input type="radio" id="${idsMap.modifyTypePercent}" name="type" value="percent" ${isFixed ? "" : "checked='true'"}> percent
+        </div>
+        <label for="${idsMap.modifyInput}"/> Modifier </label>
+        <input id="${idsMap.modifyInput}" value="${defaultValue}" />
+        <input id="${idsMap.modifyButton}" type="button" value="Submit"/>
+   
       </div>
     </div>`);
-};
+    document.getElementById(idsMap.modifyButton).addEventListener("click", () => {
+        const isFixed = document.getElementById(idsMap.modifyTypeFixed)
+            .checked;
+        const value = document.getElementById(idsMap.modifyInput).value;
+        localStorage.setItem(localStorageMap.isFixed, isFixed);
+        localStorage.setItem(localStorageMap.value, value);
+    });
+});
 const initializeStriptEvents = () => {
     const ProductButton = $(document.getElementById("inventories"));
     $(ProductButton).on("click", () => __awaiter(this, void 0, void 0, function* () {

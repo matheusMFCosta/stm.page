@@ -20,7 +20,7 @@
 // jQuery is already added by Steam, force no conflict mode.
 
 enum pages {
-  Market = "marker",
+  Market = "market",
   Inventory = "inventory",
 }
 
@@ -29,19 +29,27 @@ let currentPage: pages = pages.Market;
 const getMarketElementById = (element: string) => {
   if (currentPage === pages.Inventory)
     //@ts-ignore
-    return window.parent.$("#" + element);
-  return $("#" + element);
+    return window.parent.$(element);
+  return $(element);
 };
 
 const getInventoryElementById = (element: string) => {
-  //@ts-ignore
-  return $("#" + element);
+  return $(element);
+};
+
+const localStorageMap = {
+  isFixed: "stm.plg.isFixed",
+  value: "stm.plg.value",
 };
 
 const idsMap = {
   productName: "stm.plg.product.name",
   productValue: "stm.plg.product.value",
   productId: "stm.plg.product.id",
+  modifyInput: "stm.plg.modify.input",
+  modifyButton: "stm.plg.modify.button",
+  modifyTypeFixed: "stm.plg.modify.type.fixed",
+  modifyTypePercent: "stm.plg.modify.type.percent",
 };
 
 interface ProductDetail {
@@ -131,23 +139,55 @@ const getProductDetails = async (): Promise<ProductDetail> => {
 };
 
 const updateProductDetails = (productDetail: ProductDetail) => {
+  console.log(productDetail);
   getMarketElementById(idsMap.productId).textContent = productDetail.id;
   getMarketElementById(idsMap.productName).textContent = productDetail.name;
   getMarketElementById(idsMap.productValue).textContent = productDetail.value;
 };
 
-const initializeControlPanel = () => {
+const initializeControlPanel = async (): Promise<void> => {
   const selector = "#global_header";
+
+  const defaultValue = localStorage.getItem(localStorageMap.value) || "";
+  const isFixedLocalStorage = localStorage.getItem(localStorageMap.isFixed);
+  const isFixed =
+    isFixedLocalStorage === "true" || isFixedLocalStorage === null;
+
   $(selector).append(
     `<div style="background: #8F98A0; position: absolute; z-index: 9999; top: 10px; right: 10px; width: 200px; height: 300px; color: #000;">
       <div style="display: flex; flex-direction: column;">
         <span >Product Details </span>
-        <span >Value: <span id="${idsMap.productId}">N/A</span><span>
+        <span >Id: <span id="${idsMap.productId}">N/A</span><span>
         <span >Name: <span id="${idsMap.productName}">N/A</span><span>
         <span >Value: <span id="${idsMap.productValue}">N/A</span><span>
+
+        <div id="types">
+          <input type="radio" id="${
+            idsMap.modifyTypeFixed
+          }" name="type" value="fixed" ${
+      isFixed ? "checked='true'" : ""
+    }"> fixed
+          <input type="radio" id="${
+            idsMap.modifyTypePercent
+          }" name="type" value="percent" ${
+      isFixed ? "" : "checked='true'"
+    }> percent
+        </div>
+        <label for="${idsMap.modifyInput}"/> Modifier </label>
+        <input id="${idsMap.modifyInput}" value="${defaultValue}" />
+        <input id="${idsMap.modifyButton}" type="button" value="Submit"/>
+   
       </div>
     </div>`
   );
+
+  document.getElementById(idsMap.modifyButton).addEventListener("click", () => {
+    const isFixed = (document.getElementById(idsMap.modifyTypeFixed) as any)
+      .checked;
+    const value = (document.getElementById(idsMap.modifyInput) as any).value;
+    localStorage.setItem(localStorageMap.isFixed, isFixed);
+    localStorage.setItem(localStorageMap.value, value);
+  });
 };
 
 const initializeStriptEvents = () => {
