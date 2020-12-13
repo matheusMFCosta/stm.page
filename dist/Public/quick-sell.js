@@ -113,9 +113,9 @@ const calculateValue = (value, modifierType, productValue) => {
     const isFixed = modifierType === ModifierType.Fixed;
     const calculatedValue = parseFloat(value.replace(",", "."));
     const variableValue = parseFloat(productValue);
-    console.log(calculatedValue, productValue);
+    console.log("----2", variableValue, calculatedValue);
     if (isFixed) {
-        return (variableValue + calculatedValue) / 100;
+        return variableValue / 100 + calculatedValue;
     }
     return (variableValue * (1 + calculatedValue / 100)) / 100;
 };
