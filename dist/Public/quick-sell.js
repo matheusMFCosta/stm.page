@@ -27,10 +27,26 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var pages;
+(function (pages) {
+    pages["Market"] = "marker";
+    pages["Inventory"] = "inventory";
+})(pages || (pages = {}));
+let currentPage = pages.Market;
+const getMarketElementById = (element) => {
+    if (currentPage === pages.Inventory)
+        //@ts-ignore
+        return window.parent.$("#" + element);
+    return $("#" + element);
+};
+const getInventoryElementById = (element) => {
+    //@ts-ignore
+    return $("#" + element);
+};
 const idsMap = {
-    productName: "#stm.plg.product.name",
-    productValue: "#stm.plg.product.value",
-    productId: "#stm.plg.product.id",
+    productName: "stm.plg.product.name",
+    productValue: "stm.plg.product.value",
+    productId: "stm.plg.product.id",
 };
 const country = "BR";
 const language = "brazilian";
@@ -92,10 +108,9 @@ const getProductDetails = () => __awaiter(this, void 0, void 0, function* () {
     };
 });
 const updateProductDetails = (productDetail) => {
-    document.getElementById(idsMap.productId).textContent = productDetail.id;
-    document.getElementById(idsMap.productName).textContent = productDetail.name;
-    document.getElementById(idsMap.productValue).textContent =
-        productDetail.value;
+    getMarketElementById(idsMap.productId).textContent = productDetail.id;
+    getMarketElementById(idsMap.productName).textContent = productDetail.name;
+    getMarketElementById(idsMap.productValue).textContent = productDetail.value;
 };
 const initializeControlPanel = () => {
     const selector = "#global_header";
@@ -120,15 +135,13 @@ const initializeScript = () => {
     initializeStriptEvents();
 };
 (function ($, async) {
-    console.log(Object.keys(document));
-    console.log(document.location);
-    console.log(Object.keys($));
     $(document).ready(function () {
         if (!isUserLogged())
             return;
-        if (document.location.pathname.includes("market"))
-            initializeScript();
-        if (document.location.pathname.includes("inventory"))
+        currentPage = document.location.pathname.includes("market")
+            ? pages.Market
+            : pages.Inventory;
+        if (window.location.host === "steamcommunity.com")
             initializeScript();
     });
     //@ts-ignore

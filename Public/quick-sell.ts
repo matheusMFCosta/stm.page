@@ -19,10 +19,29 @@
 // ==/UserScript==
 // jQuery is already added by Steam, force no conflict mode.
 
+enum pages {
+  Market = "marker",
+  Inventory = "inventory",
+}
+
+let currentPage: pages = pages.Market;
+
+const getMarketElementById = (element: string) => {
+  if (currentPage === pages.Inventory)
+    //@ts-ignore
+    return window.parent.$("#" + element);
+  return $("#" + element);
+};
+
+const getInventoryElementById = (element: string) => {
+  //@ts-ignore
+  return $("#" + element);
+};
+
 const idsMap = {
-  productName: "#stm.plg.product.name",
-  productValue: "#stm.plg.product.value",
-  productId: "#stm.plg.product.id",
+  productName: "stm.plg.product.name",
+  productValue: "stm.plg.product.value",
+  productId: "stm.plg.product.id",
 };
 
 interface ProductDetail {
@@ -112,10 +131,9 @@ const getProductDetails = async (): Promise<ProductDetail> => {
 };
 
 const updateProductDetails = (productDetail: ProductDetail) => {
-  document.getElementById(idsMap.productId).textContent = productDetail.id;
-  document.getElementById(idsMap.productName).textContent = productDetail.name;
-  document.getElementById(idsMap.productValue).textContent =
-    productDetail.value;
+  getMarketElementById(idsMap.productId).textContent = productDetail.id;
+  getMarketElementById(idsMap.productName).textContent = productDetail.name;
+  getMarketElementById(idsMap.productValue).textContent = productDetail.value;
 };
 
 const initializeControlPanel = () => {
@@ -146,15 +164,12 @@ const initializeScript = () => {
 };
 
 (function ($, async) {
-  console.log(Object.keys(document));
-  console.log(document.location);
-  console.log(Object.keys($));
   $(document).ready(function () {
     if (!isUserLogged()) return;
-    if (document.location.pathname.includes("market"))
-      initializeScript(document, $);
-    // if (document.location.pathname.includes("inventory"))
-    //   initializeScript(document, $);
+    currentPage = document.location.pathname.includes("market")
+      ? pages.Market
+      : pages.Inventory;
+    if (window.location.host === "steamcommunity.com") initializeScript();
   });
   //@ts-ignore
 })(jQuery, async);
