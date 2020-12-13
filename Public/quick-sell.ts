@@ -64,7 +64,7 @@ enum ModifierType {
 
 let currentPage: pages = pages.Market;
 let modifierType: ModifierType = ModifierType.Fixed;
-let modifierValue: string = "222";
+let modifierValue: string = "";
 
 const sleep = async (time: number) =>
   await new Promise((resolve) => {
@@ -137,10 +137,10 @@ const calculateValue = (
 
   console.log(calculatedValue, productValue);
   if (isFixed) {
-    return variableValue + calculatedValue;
+    return (variableValue + calculatedValue) / 100;
   }
 
-  return variableValue * (1 + calculatedValue / 100);
+  return (variableValue * (1 + calculatedValue / 100)) / 100;
 };
 
 const sellItem = async () => {
@@ -156,9 +156,12 @@ const sellItem = async () => {
     productDetail.value
   );
 
-  await sleep(2000);
+  await sleep(1000);
 
-  (document.getElementById("market_sell_currency_input") as any).value = value;
+  (document.getElementById(
+    "market_sell_buyercurrency_input"
+  ) as any).value = value;
+  (document.getElementById("market_sell_buyercurrency_input") as any).focus();
   (document.getElementById(
     "market_sell_dialog_accept_ssa"
   ) as any).checked = true;
@@ -249,7 +252,6 @@ const initializeStriptEvents = () => {
 
   const sellItemButton = getMarketElementById(idsMap.sellItem);
   $(sellItemButton).on("click", async (e) => {
-    alert("AAA");
     sellItem();
   });
 };

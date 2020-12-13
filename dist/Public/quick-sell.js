@@ -61,7 +61,7 @@ var ModifierType;
 })(ModifierType || (ModifierType = {}));
 let currentPage = pages.Market;
 let modifierType = ModifierType.Fixed;
-let modifierValue = "222";
+let modifierValue = "";
 const sleep = (time) => __awaiter(this, void 0, void 0, function* () {
     return yield new Promise((resolve) => {
         setTimeout(() => resolve({}), time);
@@ -115,17 +115,18 @@ const calculateValue = (value, modifierType, productValue) => {
     const variableValue = parseFloat(productValue);
     console.log(calculatedValue, productValue);
     if (isFixed) {
-        return variableValue + calculatedValue;
+        return (variableValue + calculatedValue) / 100;
     }
-    return variableValue * (1 + calculatedValue / 100);
+    return (variableValue * (1 + calculatedValue / 100)) / 100;
 };
 const sellItem = () => __awaiter(this, void 0, void 0, function* () {
     const button = getInventoryElementById("item_market_actions", "class").find("a")[1];
     button.click((e) => e.preventDefault());
     console.log(modifierValue, modifierType);
     const value = calculateValue(modifierValue, modifierType, productDetail.value);
-    yield sleep(2000);
-    document.getElementById("market_sell_currency_input").value = value;
+    yield sleep(1000);
+    document.getElementById("market_sell_buyercurrency_input").value = value;
+    document.getElementById("market_sell_buyercurrency_input").focus();
     document.getElementById("market_sell_dialog_accept_ssa").checked = true;
 });
 const getProductDetails = () => __awaiter(this, void 0, void 0, function* () {
@@ -189,7 +190,6 @@ const initializeStriptEvents = () => {
     }));
     const sellItemButton = getMarketElementById(idsMap.sellItem);
     $(sellItemButton).on("click", (e) => __awaiter(this, void 0, void 0, function* () {
-        alert("AAA");
         sellItem();
     }));
 };
