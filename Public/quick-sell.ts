@@ -18,9 +18,29 @@
 // @grant       unsafeWindow
 // ==/UserScript==
 // jQuery is already added by Steam, force no conflict mode.
+
+const idsMap = {
+  productName: "#stm.plg.product.name",
+  productValue: "#stm.plg.product.value",
+  productId: "#stm.plg.product.id",
+};
+
+interface ProductDetail {
+  id: string;
+  name: string;
+  value: string;
+}
+
+declare const unsafeWindow: any;
+declare const $: any;
 const country = "BR";
 const language = "brazilian";
 const currencyId = 7;
+let productDetail = {
+  id: "",
+  name: "",
+  value: "",
+};
 
 const getCurrentItemOrdersHistogram = (itemId) => {
   return new Promise((resolve, reject) => {
@@ -40,7 +60,10 @@ const getCurrentItemOrdersHistogram = (itemId) => {
   });
 };
 
-const getCurrentMarketItemNameId = async (appid, market_name) => {
+const getCurrentMarketItemNameId = async (
+  appid,
+  market_name
+): Promise<string> => {
   return new Promise((resolve, reject) => {
     var url =
       window.location.protocol +
@@ -64,10 +87,7 @@ const isUserLogged = () =>
     unsafeWindow.g_rgWalletInfo != null) ||
   (typeof unsafeWindow.g_bLoggedIn !== "undefined" && unsafeWindow.g_bLoggedIn);
 
-declare const unsafeWindow: any;
-declare const $: any;
-
-const updateas = async () => {
+const getProductDetails = async (): Promise<ProductDetail> => {
   const href = document
     .getElementsByClassName("item_market_actions")[0]
     //@ts-ignore
@@ -77,40 +97,64 @@ const updateas = async () => {
   const productName = splitedUrl[splitedUrl.length - 1];
   const appId = splitedUrl[splitedUrl.length - 2];
 
-  const productId = await getCurrentMarketItemNameId(appId, productName);
+  const productId: string = await getCurrentMarketItemNameId(
+    appId,
+    productName
+  );
   const histogram: any = await getCurrentItemOrdersHistogram(productId);
   const lowest_sell_order = histogram.lowest_sell_order;
 
-  alert(lowest_sell_order);
+  return {
+    id: productId,
+    name: productName,
+    value: lowest_sell_order,
+  };
 };
 
-const initializeControl = () => {
-  const selector = "#global_header";
-  $(selector).append(`<div class="absolute h3 w3 z-999">tooop</div>`);
-  const b = $(document.getElementById("inventories"));
+const updateProductDetails = (productDetail: ProductDetail) => {
+  document.getElementById(idsMap.productId).textContent = productDetail.id;
+  document.getElementById(idsMap.productName).textContent = productDetail.name;
+  document.getElementById(idsMap.productValue).textContent =
+    productDetail.value;
+};
 
-  $(b).on("click", () => {
-    updateas();
+const initializeControlPanel = () => {
+  const selector = "#global_header";
+  $(selector).append(
+    `<div style="background: #8F98A0; position: absolute; z-index: 9999; top: 10px; right: 10px; width: 200px; height: 300px; color: #000;">
+      <div style="display: flex; flex-direction: column;">
+        <span >Product Details </span>
+        <span >Value: <span id="${idsMap.productId}">N/A</span><span>
+        <span >Name: <span id="${idsMap.productName}">N/A</span><span>
+        <span >Value: <span id="${idsMap.productValue}">N/A</span><span>
+      </div>
+    </div>`
+  );
+};
+
+const initializeStriptEvents = () => {
+  const ProductButton = $(document.getElementById("inventories"));
+  $(ProductButton).on("click", async () => {
+    const productDetails = await getProductDetails();
+    updateProductDetails(productDetails);
   });
 };
 
 const initializeScript = () => {
-  setTimeout(() => {
-    initializeControl();
-  }, 2000);
+  initializeControlPanel();
+  initializeStriptEvents();
 };
 
 (function ($, async) {
+  console.log(Object.keys(document));
+  console.log(document.location);
+  console.log(Object.keys($));
   $(document).ready(function () {
-    if (!isUserLogged()) {
-      return;
-    }
-
-    //
-    if (window.location.host === "steamcommunity.com") {
-      initializeScript();
-    }
+    if (!isUserLogged()) return;
+    if (document.location.pathname.includes("market"))
+      initializeScript(document, $);
+    // if (document.location.pathname.includes("inventory"))
+    //   initializeScript(document, $);
   });
-
   //@ts-ignore
 })(jQuery, async);

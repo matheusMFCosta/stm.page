@@ -1,12 +1,3 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 // ==UserScript==
 // @name        Steam Quick sell
 // @icon        https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg
@@ -27,9 +18,28 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 // @grant       unsafeWindow
 // ==/UserScript==
 // jQuery is already added by Steam, force no conflict mode.
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+const idsMap = {
+    productName: "#stm.plg.product.name",
+    productValue: "#stm.plg.product.value",
+    productId: "#stm.plg.product.id",
+};
 const country = "BR";
 const language = "brazilian";
 const currencyId = 7;
+let productDetail = {
+    id: "",
+    name: "",
+    value: "",
+};
 const getCurrentItemOrdersHistogram = (itemId) => {
     return new Promise((resolve, reject) => {
         var url = window.location.protocol +
@@ -64,7 +74,7 @@ const getCurrentMarketItemNameId = (appid, market_name) => __awaiter(this, void 
 const isUserLogged = () => (typeof unsafeWindow.g_rgWalletInfo !== "undefined" &&
     unsafeWindow.g_rgWalletInfo != null) ||
     (typeof unsafeWindow.g_bLoggedIn !== "undefined" && unsafeWindow.g_bLoggedIn);
-const updateas = () => __awaiter(this, void 0, void 0, function* () {
+const getProductDetails = () => __awaiter(this, void 0, void 0, function* () {
     const href = document
         .getElementsByClassName("item_market_actions")[0]
         //@ts-ignore
@@ -75,30 +85,51 @@ const updateas = () => __awaiter(this, void 0, void 0, function* () {
     const productId = yield getCurrentMarketItemNameId(appId, productName);
     const histogram = yield getCurrentItemOrdersHistogram(productId);
     const lowest_sell_order = histogram.lowest_sell_order;
-    alert(lowest_sell_order);
+    return {
+        id: productId,
+        name: productName,
+        value: lowest_sell_order,
+    };
 });
-const initializeControl = () => {
+const updateProductDetails = (productDetail) => {
+    document.getElementById(idsMap.productId).textContent = productDetail.id;
+    document.getElementById(idsMap.productName).textContent = productDetail.name;
+    document.getElementById(idsMap.productValue).textContent =
+        productDetail.value;
+};
+const initializeControlPanel = () => {
     const selector = "#global_header";
-    $(selector).append(`<div class="absolute h3 w3 z-999">tooop</div>`);
-    const b = $(document.getElementById("inventories"));
-    $(b).on("click", () => {
-        updateas();
-    });
+    $(selector).append(`<div style="background: #8F98A0; position: absolute; z-index: 9999; top: 10px; right: 10px; width: 200px; height: 300px; color: #000;">
+      <div style="display: flex; flex-direction: column;">
+        <span >Product Details </span>
+        <span >Value: <span id="${idsMap.productId}">N/A</span><span>
+        <span >Name: <span id="${idsMap.productName}">N/A</span><span>
+        <span >Value: <span id="${idsMap.productValue}">N/A</span><span>
+      </div>
+    </div>`);
+};
+const initializeStriptEvents = () => {
+    const ProductButton = $(document.getElementById("inventories"));
+    $(ProductButton).on("click", () => __awaiter(this, void 0, void 0, function* () {
+        const productDetails = yield getProductDetails();
+        updateProductDetails(productDetails);
+    }));
 };
 const initializeScript = () => {
-    setTimeout(() => {
-        initializeControl();
-    }, 2000);
+    initializeControlPanel();
+    initializeStriptEvents();
 };
 (function ($, async) {
+    console.log(Object.keys(document));
+    console.log(document.location);
+    console.log(Object.keys($));
     $(document).ready(function () {
-        if (!isUserLogged()) {
+        if (!isUserLogged())
             return;
-        }
-        //
-        if (window.location.host === "steamcommunity.com") {
+        if (document.location.pathname.includes("market"))
             initializeScript();
-        }
+        if (document.location.pathname.includes("inventory"))
+            initializeScript();
     });
     //@ts-ignore
 })(jQuery, async);
